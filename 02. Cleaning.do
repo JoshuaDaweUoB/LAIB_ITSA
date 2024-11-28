@@ -67,8 +67,6 @@ tab Year site_id, nolab // drops in 2020 ("clinic name ommited" ) & 2025 ("clini
 tab Quarter site_id if site_id == 2020 | site_id == 2025
 tab Quarter site_id if site_id == 2020 | site_id == 2025, nolab
 
-* nothing weird with mediclinic
-
 * need to look a bit more into "clinic name ommited" 
 tab Month site_id if site_id == 2025, nolab // May 2021 was a bumper month, Jan 2021 was slow
 tab d_event_dte if (d_event_dte > date("16may2021","DMY") & d_event_dte < date("26may2021","DMY")) & site_id == 2025, nolab // 1,414 scripts written on 22nd May 2021
