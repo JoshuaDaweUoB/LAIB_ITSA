@@ -8,7 +8,7 @@
 ************************************************************
 
 /// load data ///
-use "OAT_scripts_overall_Quarter.dta", clear
+use "C:\Users\vl22683\OneDrive - University of Bristol\Documents\Publications\OAT prescribing\Data\22022024\OAT_scripts_overall_Quarter.dta", clear
 
 /// model setup///
 
@@ -105,9 +105,7 @@ graph export "Buprenorphine_poisson_itsa.png", replace
 * define the observation period and interruption point
 local interruption_quarter 239 
 
-glm bupre_lai Quarter if Quarter >= `interruption_quarter', family(poisson) link(log) eform vce(robust)
-
-poisson bupre_lai Quarter if Quarter >= `interruption_quarter'
+glm bupre_lai Quarter if Quarter >= `interruption_quarter', family(poisson) link(identity) eform vce(robust)
 
 // generate predicted values
 predict bupre_lai_fit if Quarter >= `interruption_quarter'
@@ -139,17 +137,34 @@ twoway ///
     (line Buprenorphine_fit_cf Quarter, sort lcolor(orange) lwidth(medium) lpattern(dash)) ///
 	(scatter bupre_lai Quarter if Quarter >= 239, mcolor(teal) msize(tiny)) /// 
     (line bupre_lai_fit Quarter if Quarter >= 239, sort lcolor(teal) lwidth(medium) lpattern(dash)), /// 
-    ytitle("Quarterly number of OAT prescriptions issued") xtitle("Quarter") ///
+    ytitle("Quarterly number of OAT prescriptions issued") xtitle("Year") ///
     legend(order(1 "Total (Observed)" 2 "Total (Fitted)" 3 "Total (Counterfactual)" 4 "Methadone (Observed)" 5 "Methadone (Fitted)" ///
 	6 "Methadone (Counterfactual)" 7 "Buprenorphine (Observed)" 8 "Buprenorphine (Fitted)" 9 "Buprenorphine (Counterfactual)" 10 "LAIB (Observed)" 11 "LAIB (Fitted)")) ///
     xline(239, lcolor(black) lpattern(shortdash) lwidth(medium)) /// 
-    xlabel(220(4)255, format(%tqCY)) ///
+    xlabel(220(8)255, format(%tqCY)) ///
     graphregion(color(white)) 
 
 graph rename Combined_itsa, replace 
 graph export "Combined_itsa.png", width(1200) height(600) replace
 
 /// model checking ///
+
+* checking for seasonality
+
+* create dummy variable for Q1 and Q4
+gen q1_q4 = .
+	recode q1_q4 .=1 if Quarter == 220 | Quarter == 223 | Quarter == 224 | Quarter == 227 | Quarter == 228 | Quarter == 231 | Quarter == 232 | Quarter == 235 | Quarter == 236 | ///
+	Quarter == 239 | Quarter == 240 | Quarter == 243 | Quarter == 244 | Quarter == 247 | Quarter == 248 | Quarter == 251 | Quarter == 252 | Quarter == 255
+	recode q1_q4 .=0
+
+* overall prescribing	
+glm Total Quarter post post_trend q1_q4, family(poisson) link(log) eform vce(robust)
+	
+* methadone prescribing
+glm Methadone Quarter post post_trend q1_q4, family(poisson) link(log) eform vce(robust)
+
+* buprenorphine prescribing
+glm Buprenorphine Quarter post post_trend q1_q4, family(poisson) link(log) eform vce(robust)
 
 * allowing for overdispersion
 glm Total Quarter post post_trend, family(poisson) link(log) scale(x2) eform
