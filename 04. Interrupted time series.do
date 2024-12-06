@@ -8,7 +8,7 @@
 ************************************************************
 
 /// load data ///
-use "C:\Users\vl22683\OneDrive - University of Bristol\Documents\Publications\OAT prescribing\Data\22022024\OAT_scripts_overall_Quarter.dta", clear
+use "OAT_scripts_overall_Quarter.dta", clear
 
 /// model setup///
 
