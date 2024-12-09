@@ -19,26 +19,29 @@ tsset Quarter
 gen post = .
 	recode post .=0 if Quarter < 240
 	recode post .=1 if Quarter >= 240
-	
-* reference the specific time for 2019q4 (Quarter == 240)
-gen base_time = Quarter if Quarter == tq(2019q4)
-summarize base_time, meanonly
-local base_time = r(mean)
-	
-* create an interaction term for the post-intervention trend
-gen post_trend = post * (Quarter - `base_time')
+
+* summary statistics for before and after the intervention
+bysort post: summ Total
+bysort post: summ Methadone
+bysort post: summ Buprenorphine
+
+* centre time
+gen Quarter_centred = Quarter - 240 
 
 /// modelling ///
 
 * overall prescribing Poisson regression model
-glm Total Quarter post post_trend, family(poisson) link(log) eform vce(robust)
+glm c.Total c.Quarter_centred##i.post, family(poisson) link(log) eform vce(robust)
+
+* post-intervention trend
+lincom  _b[c.Quarter_centred] + _b[1.post#c.Quarter_centred], eform
 
 * predicted values
 predict Total_fit, nooffset
 
 * generate the counterfactual
-gen Total_fit_cf = Total_fit if post == 1
-replace Total_fit_cf = Total_fit_cf / (exp(_b[post]) * exp(_b[post_trend] * (Quarter - `base_time'))) if post == 1
+gen Total_fit_cf = exp(_b[_cons] + _b[c.Quarter_centred] * Quarter_centred)
+replace Total_fit_cf = exp(_b[_cons] + _b[c.Quarter_centred] * Quarter_centred) if post == 1
 
 * graph overall prescribing
 twoway (scatter Total Quarter, mcolor(black)) /// 
@@ -49,20 +52,23 @@ twoway (scatter Total Quarter, mcolor(black)) ///
        xline(239, lcolor(black) lpattern(shortdash) lwidth(medium)) ///
        xlabel(220(4)255, format(%tqCY)) ///
        graphregion(color(white))
-
+   
 * save
-graph rename Total, replace 
+graph rename Total, replace  
 graph export "Total_poisson_itsa.png", replace
 
 * methadone prescribing Poisson regression model
-glm Methadone Quarter post post_trend, family(poisson) link(log) eform vce(robust)
+glm Methadone c.Quarter_centred##i.post, family(poisson) link(log) eform vce(robust)
+
+* post-intervention trend
+lincom  _b[c.Quarter_centred] + _b[1.post#c.Quarter_centred], eform
 
 * predicted values
-predict Methadone_fit 
+predict Methadone_fit, nooffset
 
 * generate the counterfactual
-gen Methadone_fit_cf = Methadone_fit if post == 1
-replace Methadone_fit_cf = Methadone_fit_cf / (exp(_b[post]) * exp(_b[post_trend] * (Quarter - `base_time'))) if post == 1
+gen Methadone_fit_cf = exp(_b[_cons] + _b[c.Quarter_centred] * Quarter_centred)
+replace Methadone_fit_cf = exp(_b[_cons] + _b[c.Quarter_centred] * Quarter_centred) if post == 1
 
 * graph methadone prescribing
 twoway (scatter Methadone Quarter, mcolor(black)) ///
@@ -79,14 +85,17 @@ graph rename Methadone, replace
 graph export "Methadone_poisson_itsa.png", replace
 
 * buprenorphine prescribing Poisson regression model
-glm Buprenorphine Quarter post post_trend, family(poisson) link(log) eform vce(robust)
+glm c.Buprenorphine c.Quarter_centred##i.post, family(poisson) link(log) eform vce(robust)
+
+* post-intervention trend
+lincom  _b[c.Quarter_centred] + _b[1.post#c.Quarter_centred], eform
 
 * predicted values
-predict Buprenorphine_fit  
+predict Buprenorphine_fit, nooffset
 
 * generate the counterfactual
-gen Buprenorphine_fit_cf = Buprenorphine_fit if post == 1
-replace Buprenorphine_fit_cf = Buprenorphine_fit_cf / (exp(_b[post]) * exp(_b[post_trend] * (Quarter - `base_time'))) if post == 1
+gen Buprenorphine_fit_cf = exp(_b[_cons] + _b[c.Quarter_centred] * Quarter_centred)
+replace Buprenorphine_fit_cf = exp(_b[_cons] + _b[c.Quarter_centred] * Quarter_centred) if post == 1
 
 * graph
 twoway (scatter Buprenorphine Quarter, mcolor(black)) ///
@@ -158,18 +167,18 @@ gen q1_q4 = .
 	recode q1_q4 .=0
 
 * overall prescribing	
-glm Total Quarter post post_trend q1_q4, family(poisson) link(log) eform vce(robust)
+glm c.Total c.Quarter##i.post q1_q4, family(poisson) link(log) eform vce(robust)
 	
 * methadone prescribing
-glm Methadone Quarter post post_trend q1_q4, family(poisson) link(log) eform vce(robust)
+glm c.Methadone c.Quarter##i.post q1_q4, family(poisson) link(log) eform vce(robust)
 
 * buprenorphine prescribing
-glm Buprenorphine Quarter post post_trend q1_q4, family(poisson) link(log) eform vce(robust)
+glm c.Buprenorphine c.Quarter##i.post q1_q4, family(poisson) link(log) eform vce(robust)
 
 * allowing for overdispersion
-glm Total Quarter post post_trend, family(poisson) link(log) scale(x2) eform
-glm Total Methadone post post_trend, family(poisson) link(log) scale(x2) eform
-glm Total Buprenorphine post post_trend, family(poisson) link(log) scale(x2) eform
+glm c.Total c.Quarter##i.post, family(poisson) link(log) scale(x2) eform
+glm c.Total c.Quarter##i.post, family(poisson) link(log) scale(x2) eform
+glm c.Total c.Quarter##i.post, family(poisson) link(log) scale(x2) eform
 
 * tests for autocorrelation
 ac Total_fit
