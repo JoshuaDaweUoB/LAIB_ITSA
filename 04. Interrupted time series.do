@@ -12,13 +12,10 @@ use "OAT_scripts_overall_Quarter.dta", clear
 
 /// model setup///
 
-* set data
-tsset Quarter
-
 * create an intervention dummy variable (0 before 2019q4, 1 after)
 gen post = .
-	recode post .=0 if Quarter < 240
-	recode post .=1 if Quarter >= 240
+	recode post .=0 if Quarter < 239
+	recode post .=1 if Quarter >= 239
 
 * summary statistics for before and after the intervention
 bysort post: summ Total
@@ -26,7 +23,7 @@ bysort post: summ Methadone
 bysort post: summ Buprenorphine
 
 * centre time
-gen Quarter_centred = Quarter - 240 
+gen Quarter_centred = Quarter - 240
 
 /// modelling ///
 
@@ -42,7 +39,7 @@ predict Total_fit, nooffset
 * generate the counterfactual
 gen Total_fit_cf = exp(_b[_cons] + _b[c.Quarter_centred] * Quarter_centred)
 replace Total_fit_cf = exp(_b[_cons] + _b[c.Quarter_centred] * Quarter_centred) if post == 1
-
+  
 * graph overall prescribing
 twoway (scatter Total Quarter, mcolor(black)) /// 
        (line Total_fit Quarter, sort lcolor(black) lwidth(medium) lpattern(solid)) ///
@@ -50,7 +47,7 @@ twoway (scatter Total Quarter, mcolor(black)) ///
        legend(order(1 "Observed" 2 "Predicted" 3 "Counterfactual")) ///
        title("Overall prescribing") ///
        xline(239, lcolor(black) lpattern(shortdash) lwidth(medium)) ///
-       xlabel(220(4)255, format(%tqCY)) ///
+	   xlabel(220(4)255, format(%tqCY)) ///
        graphregion(color(white))
    
 * save
@@ -150,7 +147,7 @@ twoway ///
     legend(order(1 "Total (Observed)" 2 "Total (Fitted)" 3 "Total (Counterfactual)" 4 "Methadone (Observed)" 5 "Methadone (Fitted)" ///
 	6 "Methadone (Counterfactual)" 7 "Buprenorphine (Observed)" 8 "Buprenorphine (Fitted)" 9 "Buprenorphine (Counterfactual)" 10 "LAIB (Observed)" 11 "LAIB (Fitted)")) ///
     xline(239, lcolor(black) lpattern(shortdash) lwidth(medium)) /// 
-    xlabel(220(8)255, format(%tqCY)) ///
+    xlabel(220(4)255, format(%tqCY)) ///
     graphregion(color(white)) 
 
 graph rename Combined_itsa, replace 
