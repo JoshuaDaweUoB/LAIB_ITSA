@@ -13,7 +13,6 @@ clear
 
 * load baseline data
 use "baseline_oat_clean.dta", clear
-
 recode bupre 1=. if bupre_lai == 1
 
 * define time periods
@@ -43,7 +42,7 @@ tab site_id, nolab
 tab LocationName
 tab LocationName, nolab
 
-* very low caseload clinics
+* non eligible clinics
 drop if site_id == 2003 
 drop if site_id == 2014 
 drop if site_id == 2023
@@ -53,7 +52,7 @@ drop if site_id == 2037
 drop if site_id == 2031
 drop if site_id == 2029
 
-* problem clinics
+* clinics without complete data
 drop if site_id == 2026
 drop if site_id == 2033 // drop old "clinic name ommited" data
 drop if site_id == 2021 // "clinic name ommited"  not in ACCESS
@@ -61,38 +60,16 @@ drop if site_id == 2015 // "clinic name ommited"  missing data from 2019 onwards
 
 * check for sites with inconsistent or missing years
 tab Year site_id
-tab Year site_id, nolab // drops in 2020 ("clinic name ommited" ) & 2025 ("clinic name ommited" )
+tab Year site_id, nolab
 
 * check for inconsistent or missing months
 tab Quarter site_id if site_id == 2020 | site_id == 2025
 tab Quarter site_id if site_id == 2020 | site_id == 2025, nolab
 
-* need to look a bit more into "clinic name ommited" 
-tab Month site_id if site_id == 2025, nolab // May 2021 was a bumper month, Jan 2021 was slow
-tab d_event_dte if (d_event_dte > date("16may2021","DMY") & d_event_dte < date("26may2021","DMY")) & site_id == 2025, nolab // 1,414 scripts written on 22nd May 2021
-
-* sequence IDs to see how many individuals prescribed
-bysort link_id: egen id_seq_"clinic name ommited"  = seq() if d_event_dte == date("22may2021","DMY") & site_id == 2025
-/* id_seq_"clinic name ommited"  |
-          n |      Freq.     Percent        Cum.
-------------+-----------------------------------
-          1 |        839       59.34       59.34
-          2 |        363       25.67       85.01
-          3 |        152       10.75       95.76
-          4 |         50        3.54       99.29
-          5 |          9        0.64       99.93
-          6 |          1        0.07      100.00
-------------+-----------------------------------
-      Total |      1,414      100.00
-
-- quite a few people scripted multiple times in one day	  
-- a lot still scripted once
-
-*/
 format scr_script_dte %td
 br link_id d_drug_name scr_drug_qty scr_drug_strength scr_dose scr_rpts if d_event_dte == date("22may2021","DMY") & site_id == 2025
 
-* drop 22nd May 
+* drop 22nd May because duplicate records in medical record system 
 drop if d_event_dte == date("22may2021","DMY") & site_id == 2025
 
 * check for sites with inconsistent or missing years
@@ -182,8 +159,3 @@ drop if LocationName == "Undefined" & site_id == 2019 & scr_script_dte == date("
 
 * save dataset
 save "baseline_oat_analysis.dta", replace
-
-
-
-
-
