@@ -7,7 +7,7 @@
 * This file      : Conducts interrupted time series analysis
 ************************************************************
 
-/// simulate data 
+/// simulate data ///
 version 18
 clear
 
