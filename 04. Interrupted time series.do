@@ -7,32 +7,68 @@
 * This file      : Conducts interrupted time series analysis
 ************************************************************
 
-/// load data ///
-use "OAT_scripts_overall_Quarter.dta", clear
+/// simulate data 
+version 18
+clear
 
-/// model setup///
+* NOTE: this data is simulated for demonstration purposes only
 
-* create an intervention dummy variable (0 before 2019q4, 1 after)
-gen post = .
-	recode post .=0 if Quarter < 239
-	recode post .=1 if Quarter >= 239
+* input columns
+input Quarter post Quarter_seq Quarter_after
+220	0	0	0
+221	0	1	0
+222	0	2	0
+223	0	3	0
+224	0	4	0
+225	0	5	0
+226	0	6	0
+227	0	7	0
+228	0	8	0
+229	0	9	0
+230	0	10	0
+231	0	11	0
+232	0	12	0
+233	0	13	0
+234	0	14	0
+235	0	15	0
+236	0	16	0
+237	0	17	0
+238	0	18	0
+239	1	19	0
+240	1	20	1
+241	1	21	2
+242	1	22	3
+243	1	23	4
+244	1	24	5
+245	1	25	6
+246	1	26	7
+247	1	27	8
+248	1	28	9
+249	1	29	10
+250	1	30	11
+251	1	31	12
+252	1	32	13
+253	1	33	14
+254	1	34	15
+255	1	35	16
+end
+
+format Quarter %tq
+
+* simulate quarterly number of prescriptions
+set obs 36  
+generate Total = 10000 + (14000 - 10000) * runiform()
+generate Methadone = 5000 + (10000 - 5000) * runiform()
+generate Buprenorphine = 3000 + (6000 - 3000) * runiform()
+generate bupre_lai = 0
+replace bupre_lai = (0 + (3000 - 0) * runiform() ) if Quarter >= 239
+
+/// modelling ///
 
 * summary statistics for before and after the intervention
 bysort post: summ Total
 bysort post: summ Methadone
 bysort post: summ Buprenorphine
-
-* sequential quarter variable
-gen time = 0 in 1
-egen Quarter_seq = seq() if time !=0
-replace Quarter_seq = 0 if time == 0
-drop time
-
-* interruption quarter variable
-egen Quarter_after = seq() if Quarter >239
-recode Quarter_after .=0
-
-/// modelling ///
 
 * overall prescribing Poisson regression model
 glm Total Quarter_seq post c.post#c.Quarter_after, family(poisson) link(log) eform vce(robust)
@@ -59,7 +95,6 @@ twoway (scatter Total Quarter, mcolor(black)) ///
    
 * save
 graph rename Total, replace  
-graph export "Total_poisson_itsa.png", replace
 
 * methadone prescribing Poisson regression model
 glm Methadone Quarter_seq post c.post#c.Quarter_after, family(poisson) link(log) eform vce(robust)
@@ -86,7 +121,6 @@ twoway (scatter Methadone Quarter, mcolor(black)) ///
 
 * save
 graph rename Methadone, replace 
-graph export "Methadone_poisson_itsa.png", replace
 
 * buprenorphine prescribing Poisson regression model
 glm Buprenorphine Quarter_seq post c.post#c.Quarter_after, family(poisson) link(log) eform vce(robust)
@@ -135,7 +169,6 @@ twoway	(scatter bupre_lai Quarter if Quarter >= `interruption_quarter', mcolor(b
 		graphregion(color(white))
 
 graph rename LAIB, replace 
-graph export "Bupre_LAIB_poisson.png", replace
 
 * combine graphs with vertical line
 twoway ///
@@ -158,7 +191,6 @@ twoway ///
     graphregion(color(white)) 
 
 graph rename Combined_itsa, replace 
-graph export "Combined_itsa.png", width(1200) height(600) replace
 
 /// model checking ///
 
@@ -185,26 +217,22 @@ glm Methadone Quarter_seq post c.post#c.Quarter_after, family(poisson) link(log)
 glm Buprenorphine Quarter_seq post c.post#c.Quarter_after, family(poisson) link(log) scale(x2) eform
 
 * tests for autocorrelation
+tsset Quarter_seq
+
 ac Total_fit
 graph rename total_ac, replace 
-graph export "total_ac.png", replace
 
 pac Total_fit, yw
 graph rename total_pac, replace 
-graph export "total_pac.png", replace
 
 ac Methadone_fit
 graph rename methadone_ac, replace 
-graph export "methadone_ac.png", replace
 
 pac Methadone_fit, yw
 graph rename methadone_pac, replace 
-graph export "methadone_pac.png", replace
 
 ac Buprenorphine_fit
 graph rename bupre_ac, replace 
-graph export "bupre_ac.png", replace
 
 pac Buprenorphine_fit, yw
 graph rename bupre_pac, replace 
-graph export "bupre_pac.png", replace
