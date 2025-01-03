@@ -57,11 +57,11 @@ format Quarter %tq
 
 * simulate quarterly number of prescriptions
 set obs 36  
-generate Total = 10000 + (14000 - 10000) * runiform()
 generate Methadone = 5000 + (10000 - 5000) * runiform()
 generate Buprenorphine = 3000 + (6000 - 3000) * runiform()
 generate bupre_lai = 0
 replace bupre_lai = (0 + (3000 - 0) * runiform() ) if Quarter >= 239
+generate Total = Methadone + Buprenorphine + bupre_lai
 
 /// modelling ///
 
