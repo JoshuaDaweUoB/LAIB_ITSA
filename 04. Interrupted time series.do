@@ -196,20 +196,28 @@ graph rename Combined_itsa, replace
 
 * checking for seasonality
 
-* create dummy variable for Q1 and Q4
-gen q1_q4 = .
-	recode q1_q4 .=1 if Quarter == 220 | Quarter == 223 | Quarter == 224 | Quarter == 227 | Quarter == 228 | Quarter == 231 | Quarter == 232 | Quarter == 235 | Quarter == 236 | ///
-	Quarter == 239 | Quarter == 240 | Quarter == 243 | Quarter == 244 | Quarter == 247 | Quarter == 248 | Quarter == 251 | Quarter == 252 | Quarter == 255
-	recode q1_q4 .=0
+* create dummy variables for Q1 and Q4
+gen q1 = 0
+gen q4 = 0
+
+* assign 1 to Q1 and Q4 based on the Quarter values
+replace q1 = 1 if Quarter == 220 | Quarter == 224 | Quarter == 228 | Quarter == 232 | Quarter == 236 | ///
+                    Quarter == 240 | Quarter == 244 | Quarter == 248 | Quarter == 252 | Quarter == 256
+
+replace q4 = 1 if Quarter == 223 | Quarter == 227 | Quarter == 231 | Quarter == 235 | Quarter == 239 | ///
+                    Quarter == 243 | Quarter == 247 | Quarter == 251 | Quarter == 255
+
+* check if the variables are correctly created
+tab q1 q4
 
 * overall prescribing	
-glm Total Quarter_seq post c.post#c.Quarter_after i.q1_q4, family(poisson) link(log) eform vce(robust)
+glm Total Quarter_seq post c.post#c.Quarter_after i.q1 i.q4, family(poisson) link(log) eform vce(robust)
 	
 * methadone prescribing
-glm Methadone Quarter_seq post c.post#c.Quarter_after i.q1_q4, family(poisson) link(log) eform vce(robust)
+glm Methadone Quarter_seq post c.post#c.Quarter_after i.q1 i.q4, family(poisson) link(log) eform vce(robust)
 
 * buprenorphine prescribing
-glm Buprenorphine Quarter_seq post c.post#c.Quarter_after i.q1_q4, family(poisson) link(log) eform vce(robust)
+glm Buprenorphine Quarter_seq post c.post#c.Quarter_after i.q1 i.q4, family(poisson) link(log) eform vce(robust)
 
 * allowing for overdispersion
 glm Total Quarter_seq post c.post#c.Quarter_after, family(poisson) link(log) scale(x2) eform 
